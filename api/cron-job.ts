@@ -4,7 +4,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
     // Run the cron job task (ts-node bot.ts)
-    exec('npx ts-node src/api/bot.ts', (error, stdout, stderr) => {
+    exec('npx ts-node api/bot.ts', (error, stdout, stderr) => {
       if (error) {
         console.error(`Error executing the cron job: ${error}`);
         return res.statusCode = 500;
