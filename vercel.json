@@ -7,8 +7,8 @@
     },
     "crons": [
       {
-        "path": "/src/api/cron-job",
-        "schedule": "25 1 * * *"  
+        "path": "/api/cron-job",
+        "schedule": "32 1 * * *"  
       }
     ]
   }
