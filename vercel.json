@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "functions": {
+      "api/cron-job.ts": {
+        "runtime": "node16"
+      }
+    },
+    "crons": [
+      {
+        "path": "/api/cron-job", 
+        "schedule": "*/5 * * * *"
+      }
+    ]
+  }
+  
