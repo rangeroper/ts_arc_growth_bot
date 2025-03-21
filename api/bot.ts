@@ -1,9 +1,9 @@
 import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
-import { getTelegramStats } from "../api/telegram";
-import { getGithubStats} from "../api/github";
-import { getTokenStats } from "../api/holders";
-import { getXFollowersStats } from "../api/followers";
+import { getTelegramStats } from "./telegram";
+import { getGithubStats} from "./github";
+import { getTokenStats } from "./holders";
+import { getXFollowersStats } from "./followers";
 
 dotenv.config();
 
