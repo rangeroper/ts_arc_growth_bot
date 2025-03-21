@@ -1,15 +1,14 @@
 {
-    "version": 2,
-    "functions": {
-      "api/cron-job.ts": {
-        "runtime": "node20"
-      }
-    },
-    "crons": [
-      {
-        "path": "/api/cron-job",
-        "schedule": "14 21 * * *"  
-      }
-    ]
-  }
-  
+  "version": 2,
+  "functions": {
+    "api/cron-job.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-job",
+      "schedule": "14 21 * * *"  
+    }
+  ]
+}
