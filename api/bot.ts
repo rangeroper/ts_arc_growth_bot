@@ -6,67 +6,12 @@ import { getTelegramStats } from "./telegram";
 import { getGithubStats} from "./github";
 import { getTokenStats } from "./holders";
 import { getXFollowersStats } from "./followers";
+import { checkAndSendMilestoneNotifications, MILESTONES } from "./milestone";
 
 dotenv.config();
 
-const directory = path.join(__dirname, '..', 'data'); 
-    if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true }); // Create the directory if it doesn't exist
-    }
-
-    const MILESTONE_FILE = path.join(directory, 'milestones.json');
-
-
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN as string, { polling: false });
 const CHAT_ID = process.env.CHAT_ID as string;
-
-// Define milestone thresholds for each metric
-const MILESTONES = {
-    telegram: [10000, 12500, 15000, 17500, 20000, 25000, 30000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000],
-    githubStars: [100, 500, 1000, 2500, 3500, 4000, 4500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 35000, 40000, 50000, 60000, 70000, 80000, 90000, 100000],
-    githubForks: [50, 75, 100, 125, 150, 175, 200, 300, 400, 500, 1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 35000, 40000, 50000, 60000, 70000, 80000, 90000, 100000],
-    tokenHolders: [50000, 60000, 65000, 70000, 75000, 80000, 85000, 90000, 95000,100000, 125000, 150000, 175000, 200000, 225000, 250000, 275000, 300000],
-    xFollowers: [50000, 55000, 60000, 65000, 70000, 75000, 80000, 85000, 90000, 95000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 275000, 300000]
-};
-
-// Load previous milestones from storage
-function loadMilestones(): Record<string, number[]> {
-    try {
-        if (fs.existsSync(MILESTONE_FILE)) {
-            return JSON.parse(fs.readFileSync(MILESTONE_FILE, "utf8"));
-        }
-    } catch (error) {
-        console.error("Error reading milestones file:", error);
-    }
-    return {};
-}
-
-// Save updated milestones to storage
-function saveMilestones(milestones: Record<string, number[]>) {
-    try {
-        fs.writeFileSync(MILESTONE_FILE, JSON.stringify(milestones, null, 2), "utf8");
-    } catch (error) {
-        console.error("Error writing milestones file:", error);
-    }
-}
-
-async function checkAndSendMilestoneNotifications(metric: string, currentValue: number, milestoneList: number[]) {
-    const reachedMilestones = loadMilestones(); // Load previously hit milestones
-
-    if (!reachedMilestones[metric]) {
-        reachedMilestones[metric] = [];
-    }
-
-    for (const milestone of milestoneList) {
-        if (currentValue >= milestone && !reachedMilestones[metric].includes(milestone)) {
-            await bot.sendMessage(CHAT_ID, `🎉 Milestone Reached! ${metric} has hit ${milestone.toLocaleString()}!`);
-            
-            // Mark this milestone as reached
-            reachedMilestones[metric].push(milestone);
-            saveMilestones(reachedMilestones);
-        }
-    }
-}
 
 async function sendUpdateToTG(messages: string[]) {
     if (messages.length === 0) return;
@@ -80,10 +25,6 @@ async function main() {
         const [githubMessage, githubStats, isNewRelease] = await getGithubStats();
         const [tokenStats, tokenCount] = await getTokenStats();
         const [xFollowersStats, xFollowersCount] = await getXFollowersStats();
-
-        console.log(githubMessage);
-        console.log(githubStats);
-        console.log(isNewRelease);
 
         const messages = [
             githubMessage,
@@ -100,11 +41,11 @@ async function main() {
             await bot.sendMessage(CHAT_ID, releaseMessage);
         }
 
-        await checkAndSendMilestoneNotifications("Telegram Members", telegramCount, MILESTONES.telegram);
-        await checkAndSendMilestoneNotifications("GitHub Stars", githubStats.stars, MILESTONES.githubStars);
-        await checkAndSendMilestoneNotifications("GitHub Forks", githubStats.forks, MILESTONES.githubForks);
-        await checkAndSendMilestoneNotifications("Token Holders", tokenCount, MILESTONES.tokenHolders);
-        await checkAndSendMilestoneNotifications("X Followers", xFollowersCount, MILESTONES.xFollowers);
+        await checkAndSendMilestoneNotifications("Telegram Members", telegramCount, MILESTONES.telegram, bot, CHAT_ID);
+        await checkAndSendMilestoneNotifications("GitHub Stars", githubStats.stars, MILESTONES.githubStars, bot, CHAT_ID);
+        await checkAndSendMilestoneNotifications("GitHub Forks", githubStats.forks, MILESTONES.githubForks, bot, CHAT_ID);
+        await checkAndSendMilestoneNotifications("Token Holders", tokenCount, MILESTONES.tokenHolders, bot, CHAT_ID);
+        await checkAndSendMilestoneNotifications("X Followers", xFollowersCount, MILESTONES.xFollowers, bot, CHAT_ID);
     } catch (error) {
         console.error("Error sending metrics:", error);
     }

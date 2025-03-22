@@ -58,7 +58,6 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
                         percentChange = "N/A"; // No percentage for decrease
                     } else {
                         percentChange = ((increase / prevNum) * 100).toFixed(2);
-                        console.log(`Percentage Change for ${key}: ${percentChange}%`); // Log the percentage change
                     }
                 }
             }
