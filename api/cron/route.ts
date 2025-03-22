@@ -4,8 +4,12 @@ import * as path from 'path';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
-        // Run the bot.ts script (node command)
-        const scriptPath = path.resolve(__dirname, '../bot.ts'); // Path to bot.ts
+        // Log when the cron job is triggered
+        const currentTime = new Date().toISOString();
+        console.log(`Cron job triggered at ${currentTime}`);
+
+        // Adjust path to bot.ts from cron folder
+        const scriptPath = path.resolve(__dirname, '../../bot.ts'); // Move up two directories to reach bot.ts
         exec(`npx ts-node ${scriptPath}`, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error executing bot.ts: ${error}`);
