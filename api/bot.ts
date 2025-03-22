@@ -1,6 +1,4 @@
 import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
 import TelegramBot from "node-telegram-bot-api";
 import { Client, GatewayIntentBits, TextChannel } from "discord.js";
 import { getTelegramStats } from "./telegram";

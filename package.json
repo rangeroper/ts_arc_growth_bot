@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npx ts-node api/bot.ts",  
+    "build": "tsc", 
+    "start": "node dist/api/bot.js",  
+    "vercel": "vercel deploy --prod",  
+    "lint": "eslint .",  
+    "test": "echo \"Error: no test specified\" && exit 1" 
   },
   "keywords": [],
   "author": "",

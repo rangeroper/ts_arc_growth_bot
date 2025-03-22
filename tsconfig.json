@@ -6,5 +6,8 @@
     "rootDir": "./",
     "strict": true,
     "esModuleInterop": true
-  }
+  },
+  "include": [
+    "api/**/*.ts"  // Include TypeScript files under the 'api' folder
+  ]
 }

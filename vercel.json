@@ -1,0 +1,22 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "api/**/*.ts",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "/api/$1.ts"
+      }
+    ],
+    "cron": [
+      {
+        "path": "/api/bot.ts", 
+        "schedule": "0 0 * * *"
+      }
+    ]
+  }
+  

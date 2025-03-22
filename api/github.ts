@@ -5,7 +5,7 @@ import axios from "axios";
 
 dotenv.config();
 
-const GITHUB_REPO = process.env.GITHUB_REPO as string;
+const GITHUB_REPO = process.env.REPO as string;
 const DATA_FILE = path.join(__dirname, "../data/github_metrics.json");
 
 interface GitHubStats {
