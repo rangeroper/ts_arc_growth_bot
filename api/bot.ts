@@ -34,6 +34,7 @@ async function sendUpdateToTG(messages: string[]) {
     await bot.sendMessage(CHAT_ID, fullMessage);
 }
 
+// Function to send messages to Discord
 async function sendUpdateToDiscord(messages: string[]) {
     if (messages.length === 0) return;
 
