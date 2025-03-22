@@ -2,7 +2,6 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { exec } from 'child_process';
 import * as path from 'path';
 
-// The handler will run the bot.ts script when called
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         // Run the bot.ts script (node command)
