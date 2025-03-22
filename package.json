@@ -3,25 +3,28 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "npx ts-node api/bot.ts",  
-    "build": "tsc", 
-    "start": "node dist/api/bot.js",  
-    "vercel": "vercel deploy --prod",  
-    "lint": "eslint .",  
-    "test": "echo \"Error: no test specified\" && exit 1" 
+    "dev": "npx ts-node api/bot.ts",
+    "build": "tsc",
+    "start": "node dist/api/bot.js",
+    "vercel": "vercel deploy --prod",
+    "lint": "eslint .",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@vercel/node": "^5.1.14",
     "axios": "^1.8.4",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
     "fs": "^0.0.1-security",
     "node-telegram-bot-api": "^0.66.0",
     "path": "^0.12.7",
-    "playwright": "^1.51.1"
+    "playwright": "^1.51.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
