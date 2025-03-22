@@ -41,27 +41,29 @@ export function saveMilestones(milestones: Record<string, number[]>) {
     }
 }
 
-// Check and send milestone notifications
-export async function checkAndSendMilestoneNotifications(
-    metric: string, 
-    currentValue: number, 
-    milestoneList: number[], 
-    bot: TelegramBot, 
-    chatId: string
-) {
+// Check and determine if milestones have been reached, but don't send messages here
+export function checkMilestones(
+    metric: string,
+    currentValue: number,
+    milestoneList: number[]
+): number[] {
     const reachedMilestones = loadMilestones(); // Load previously hit milestones
 
     if (!reachedMilestones[metric]) {
         reachedMilestones[metric] = [];
     }
 
+    const newMilestones = [];
     for (const milestone of milestoneList) {
         if (currentValue >= milestone && !reachedMilestones[metric].includes(milestone)) {
-            await bot.sendMessage(chatId, `🎉 Milestone Reached! ${metric} has hit ${milestone.toLocaleString()}!`);
-            
+            newMilestones.push(milestone);
             // Mark this milestone as reached
             reachedMilestones[metric].push(milestone);
-            saveMilestones(reachedMilestones);
         }
     }
+
+    // Save the updated milestones
+    saveMilestones(reachedMilestones);
+
+    return newMilestones; // Return the list of milestones that were reached
 }
