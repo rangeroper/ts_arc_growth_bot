@@ -43,7 +43,6 @@ function loadPreviousFollowers(): number {
     try {
         if (fs.existsSync(X_METRICS_FILE)) {
             const data = JSON.parse(fs.readFileSync(X_METRICS_FILE, 'utf8'));
-            console.log('Loaded data from JSON file:', data);
             // Return current followers count or fallback to 0
             if (data?.followers?.current) {
                 return data.followers.current;
@@ -62,24 +61,20 @@ function saveFollowersCount(count: number): void {
         fs.mkdirSync(path.dirname(X_METRICS_FILE), { recursive: true });
         const stats = { followers: { current: count } };
         fs.writeFileSync(X_METRICS_FILE, JSON.stringify(stats, null, 2));
-        console.log('Saved followers count to JSON:', stats);
     } catch (error) {
         console.error('Error saving followers count:', error);
     }
 }
 
 // Function to fetch current follower stats
-export async function getXFollowersStats(): Promise<string> {
+export async function getXFollowersStats(): Promise<[string, number]> {
     const previousCount = loadPreviousFollowers();
-    console.log(`Previous Follower Count: ${previousCount}`);  // Log the previous count
-
     const profile = await scrapeXProfile('https://x.com/arcdotfun');
-
     let currentCount = 0;
+
     if (profile && profile.legacy && profile.legacy.followers_count) {
         currentCount = profile.legacy.followers_count;
     }
-    console.log(`Current Follower Count: ${currentCount}`);  // Log the current count
 
     // Calculate increase and percentage change
     const increase = currentCount - previousCount;
@@ -101,18 +96,19 @@ export async function getXFollowersStats(): Promise<string> {
     // Generate formatted message
     let message = `🐦 X Followers  >>  ${formattedCount}`;
 
-    // Show percentage only if it is positive (or if you prefer 0.00 for no change)
+    // Show percentage only if it is positive
     if (percentChange !== 'N/A' && percentChange !== '0.00') {
         message += ` (+${percentChange}%)`; // Only show percentage if it's positive and not 0.00
     }
 
-    return message;
+    return [message, currentCount];
 }
 
 // Function to run and return the formatted followers message
-async function fetchXFollowers(): Promise<string> {
+async function fetchXFollowers(): Promise<[string, number]> {
     return await getXFollowersStats();
 }
 
 // Execute the script and log the output
-fetchXFollowers().then(message => console.log(message)).catch(error => console.error('Error fetching followers:', error));
+fetchXFollowers().then(([message, currentCount]) => {
+}).catch(error => console.error('Error fetching followers:', error));

@@ -11,12 +11,13 @@ const DATA_FILE = path.join(__dirname, "../data/token_holders.json");
 
 interface HeliusResponse {
     result?: {
-        token_accounts?: { owner: string }[]; 
+        token_accounts?: { owner: string }[];
         cursor?: string;
     };
     error?: { message: string };
 }
 
+// Fetch token holders count from Helius API
 export async function getTokenHolders(): Promise<number> {
     const url = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
 
@@ -71,6 +72,7 @@ export async function getTokenHolders(): Promise<number> {
     return uniqueHolders.size;
 }
 
+// Load previous token stats
 function loadPreviousTokenStats(): number {
     try {
         if (fs.existsSync(DATA_FILE)) {
@@ -83,6 +85,7 @@ function loadPreviousTokenStats(): number {
     return 0;
 }
 
+// Save current token stats
 function saveCurrentTokenStats(currentCount: number): void {
     try {
         fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
@@ -93,13 +96,10 @@ function saveCurrentTokenStats(currentCount: number): void {
     }
 }
 
-export async function getTokenStats(): Promise<string> {
+// Get token stats and return an array [message, currentCount]
+export async function getTokenStats(): Promise<[string, number]> {
     const previousCount = loadPreviousTokenStats();
     const currentCount = await getTokenHolders();
-
-    // Log both previous and current counts for better tracking
-    console.log(`Previous Count: ${previousCount}`);
-    console.log(`Current Count: ${currentCount}`);
 
     const increase = currentCount - previousCount;
     let percentChange: number | string = "N/A";
@@ -120,8 +120,5 @@ export async function getTokenStats(): Promise<string> {
         message += ` (+${percentChange}%)`;
     }
 
-    console.log("Formatted Token Holders Stats:", message); // Log the final message for debugging
-
-    return message;
+    return [message, currentCount];
 }
-

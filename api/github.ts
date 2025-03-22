@@ -20,10 +20,8 @@ interface GitHubStatChanges {
     percent_change: number | string;
 }
 
-export async function getGithubStats(): Promise<string> {
+export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> {
     const previousStats = loadPreviousGitHubStats();
-
-    console.log(`Previous Stats:`, previousStats); // Log the previous stats
 
     try {
         const repoUrl = `https://api.github.com/repos/${GITHUB_REPO}`;
@@ -32,12 +30,9 @@ export async function getGithubStats(): Promise<string> {
         const stars = data.stargazers_count ?? 0;
         const forks = data.forks_count ?? 0;
         const releaseVersion = await getCurrentReleaseVersion();
-
         const currentStats: GitHubStats = { stars, forks, release_version: releaseVersion };
-
-        console.log(`Current Stats:`, currentStats); // Log the current stats
-
         const stats: Record<string, GitHubStatChanges> = {};
+
         for (const key of Object.keys(currentStats) as (keyof GitHubStats)[]) {
             const currentValue = key === "release_version" ? currentStats[key] : Number(currentStats[key]);
             const previousValue = key === "release_version" ? previousStats[key] ?? "N/A" : Number(previousStats[key] ?? 0);
@@ -52,15 +47,12 @@ export async function getGithubStats(): Promise<string> {
 
                 // Prevent division by zero (handle Infinity issue)
                 if (prevNum === 0) {
-                    console.log(`Previous value is 0 for ${key}, skipping percentage calculation.`);
                     percentChange = "N/A"; // No percentage change for zero previous count
                 } else {
                     // Calculate percentage only for positive increases
                     if (increase === 0) {
-                        console.log(`No change in ${key}. Showing only the current count.`);
                         percentChange = "N/A"; // No percentage for no change
                     } else if (increase < 0) {
-                        console.log(`Decrease in ${key}. Showing only the current count.`);
                         percentChange = "N/A"; // No percentage for decrease
                     } else {
                         percentChange = ((increase / prevNum) * 100).toFixed(2);
@@ -76,8 +68,13 @@ export async function getGithubStats(): Promise<string> {
             };
         }
 
-        saveCurrentGitHubStats(currentStats); // Save the current stats for future use
+        saveCurrentGitHubStats(currentStats); 
 
+        // Check for a new release version
+        const isNewRelease = currentStats.release_version !== previousStats.release_version;
+
+
+        // Format GitHub Stats Message
         const formattedStars = stats["stars"].current.toLocaleString();
         const formattedForks = stats["forks"].current.toLocaleString();
 
@@ -93,14 +90,18 @@ export async function getGithubStats(): Promise<string> {
             message += ` (+${stats["forks"].percent_change}%)`; // Only show percentage if there is a positive increase
         }
 
-        message += `\n🔖 Rig Version  >>  ${stats["release_version"].current}`;
+        message += `\n🔖 Rig Version  >>  ${stats["release_version"].current !== "N/A" ? stats["release_version"].current : "N/A"}`;
 
-        console.log("Formatted GitHub Stats:", message); // Log the final message
+        // Return the new release message only if it's a new release
+        const releaseMessage = isNewRelease ? `\n\n🚀 New Rig Release: Version **${currentStats.release_version}** is live!` : "";
 
-        return message;
+        message += releaseMessage;
+
+        return [message, currentStats, isNewRelease]; // Return the flag for new release
     } catch (error) {
         console.error("Error fetching GitHub stats:", error);
-        return "❌ Error fetching GitHub stats.";
+        const message = "❌ Error fetching GitHub stats.";
+        return [message, previousStats, false]; // Return `false` for isNewRelease on error
     }
 }
 
@@ -118,7 +119,6 @@ function loadPreviousGitHubStats(): GitHubStats {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-            console.log("Loaded previous stats:", data); // Log the loaded previous stats
             return data;
         }
     } catch (error) {
@@ -131,7 +131,6 @@ function saveCurrentGitHubStats(stats: GitHubStats): void {
     try {
         fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
         fs.writeFileSync(DATA_FILE, JSON.stringify(stats, null, 2), "utf8");
-        console.log("Saved current GitHub stats:", stats); // Log the stats being saved
     } catch (error) {
         console.error("Error saving GitHub stats:", error);
     }

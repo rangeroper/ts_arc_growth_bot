@@ -20,5 +20,4 @@ Thumbs.db
 
 .vscode/
 package-lock.json
-data/
 .vercel
