@@ -29,7 +29,9 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
 
         const stars = data.stargazers_count ?? 0;
         const forks = data.forks_count ?? 0;
+
         const releaseVersion = await getCurrentReleaseVersion();
+
         const currentStats: GitHubStats = { stars, forks, release_version: releaseVersion };
         const stats: Record<string, GitHubStatChanges> = {};
 
@@ -92,11 +94,6 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
 
         message += `\n🔖 Rig Version  >>  ${stats["release_version"].current !== "N/A" ? stats["release_version"].current : "N/A"}`;
 
-        // Return the new release message only if it's a new release
-        const releaseMessage = isNewRelease ? `\n\n🚀 New Rig Release: Version **${currentStats.release_version}** is live!` : "";
-
-        message += releaseMessage;
-
         return [message, currentStats, isNewRelease]; // Return the flag for new release
     } catch (error) {
         console.error("Error fetching GitHub stats:", error);
@@ -107,9 +104,34 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
 
 async function getCurrentReleaseVersion(): Promise<string> {
     try {
-        const url = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+        const url = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
         const { data } = await axios.get(url);
-        return data.tag_name ?? "N/A";
+
+        // Filter releases to only include rig-core versions
+        const rigCoreReleases = data.filter((release: any) => release.tag_name && release.tag_name.startsWith("rig-core"));
+
+        if (rigCoreReleases.length === 0) {
+            return "N/A"; // No rig-core releases found
+        }
+
+        // Get the latest release (highest version)
+        const latestRelease = rigCoreReleases.reduce((latest: any, release: any) => {
+            const latestVersion = latest.tag_name.replace('rig-core-', '').split('.').map(Number);
+            const releaseVersion = release.tag_name.replace('rig-core-', '').split('.').map(Number);
+
+            // Compare versions
+            for (let i = 0; i < Math.max(latestVersion.length, releaseVersion.length); i++) {
+                const lv = latestVersion[i] || 0;
+                const rv = releaseVersion[i] || 0;
+
+                if (lv > rv) return latest;
+                if (lv < rv) return release;
+            }
+            return latest; // If versions are the same, return the first
+        });
+
+        return latestRelease.tag_name ?? "N/A";
+
     } catch (error) {
         return "N/A";
     }

@@ -81,6 +81,10 @@ async function main() {
         const [tokenStats, tokenCount] = await getTokenStats();
         const [xFollowersStats, xFollowersCount] = await getXFollowersStats();
 
+        console.log(githubMessage);
+        console.log(githubStats);
+        console.log(isNewRelease);
+
         const messages = [
             githubMessage,
             telegramMessage,
