@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import TelegramBot from "node-telegram-bot-api";
+import { Client, GatewayIntentBits, TextChannel } from "discord.js";
 import { getTelegramStats } from "./telegram";
 import { getGithubStats} from "./github";
 import { getTokenStats } from "./holders";
@@ -10,13 +11,37 @@ import { checkMilestones, MILESTONES } from "./milestone";
 
 dotenv.config();
 
+// Set up Telegram client
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN as string, { polling: false });
 const CHAT_ID = process.env.CHAT_ID as string;
 
+// Set up Discord client
+const discordClient = new Client({
+    intents: [
+        GatewayIntentBits.Guilds, // Intent to manage guilds
+    ],
+});
+
+const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID as string;
+
+// Login to Discord bot
+discordClient.login(process.env.DISCORD_BOT_TOKEN as string);
+
+// Function to send messages to Telegram
 async function sendUpdateToTG(messages: string[]) {
     if (messages.length === 0) return;
     const fullMessage = messages.join("\n\n");
     await bot.sendMessage(CHAT_ID, fullMessage);
+}
+
+async function sendUpdateToDiscord(messages: string[]) {
+    if (messages.length === 0) return;
+
+    const fullMessage = messages.join("\n\n");
+    const channel = discordClient.channels.cache.get(DISCORD_CHANNEL_ID) as TextChannel;
+    if (channel) {
+        await channel.send(fullMessage);
+    }
 }
 
 async function sendMilestoneMessages(metric: string, milestones: number[]) {
@@ -27,7 +52,14 @@ async function sendMilestoneMessages(metric: string, milestones: number[]) {
     });
 
     for (const message of milestoneMessages) {
+        // Send to Telegram
         await bot.sendMessage(CHAT_ID, message);
+
+        // Send to Discord
+        const channel = discordClient.channels.cache.get(DISCORD_CHANNEL_ID) as TextChannel;
+        if (channel) {
+            await channel.send(message);
+        }
     }
 }
 
@@ -47,12 +79,18 @@ async function main() {
             xFollowersStats
         ];
 
+        // Send the grouped messages to both Telegram and Discord
         await sendUpdateToTG(messages);
+        await sendUpdateToDiscord(messages);
 
         // Check and send new rig-core version release message if a new release is available
         if (isNewRelease) {
             const releaseMessage = `🚀 New Release: Version **${githubStats.release_version}** is now available on GitHub!`;
             await bot.sendMessage(CHAT_ID, releaseMessage);
+            const channel = discordClient.channels.cache.get(DISCORD_CHANNEL_ID) as TextChannel;
+            if (channel) {
+                await channel.send(releaseMessage);
+            }
         }
 
         // Check and send milestone notifications if any milestones have been reached
@@ -71,9 +109,16 @@ async function main() {
         const xFollowersMilestones = checkMilestones("X Followers", xFollowersCount, MILESTONES.xFollowers);
         await sendMilestoneMessages("X Followers", xFollowersMilestones);
 
+        // Terminate the process after all messages are sent
+        process.exit(0);
+
     } catch (error) {
         console.error("Error sending metrics:", error);
+        process.exit(1);
     }
 }
 
-main();
+// Ensure the Discord bot is ready before proceeding with the main function
+discordClient.once('ready', () => {
+    main(); // Run the main function once Discord bot is ready
+});
