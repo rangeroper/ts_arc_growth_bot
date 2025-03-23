@@ -27,6 +27,10 @@ jobs:
           node-version: 20
 
       - run: npm install
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps  # Install the required Playwright browsers
+
       - run: npx ts-node api/bot.ts  # Run the bot, which updates JSON files
 
       - name: Commit and Push Data Changes
