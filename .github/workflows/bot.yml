@@ -20,7 +20,7 @@ jobs:
       REPO: ${{ secrets.REPO }}
       HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
       TOKEN_ADDRESS: ${{ secrets.TOKEN_ADDRESS }}
-      ARC_EVIDENCE_REPO: ${{ secrets.ARC_EVIDENCE_REPO }}  # Add the arc_evidence repo URL here
+      ARC_EVIDENCE_REPO: ${{ secrets.ARC_EVIDENCE_REPO }}
 
     steps:
       # Step 1: Checkout the repository with the correct token for push access
@@ -57,7 +57,7 @@ jobs:
       # Step 7: Add arc_evidence repository as a remote for pushing CSV updates
       - name: Add arc_evidence remote
         run: |
-          git remote add arc_evidence https://github.com/rangeroper/arc_evidence.git  # URL of the arc_evidence repo
+          git remote add arc_evidence ${{ secrets.ARC_EVIDENCE_REPO }}
 
       # Step 8: Commit and Push CSV Files to arc_evidence Repository
       - name: Commit and Push CSV Changes to arc_evidence Repository
