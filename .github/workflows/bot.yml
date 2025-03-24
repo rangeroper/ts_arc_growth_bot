@@ -3,8 +3,11 @@ name: Run Telegram & Discord Bot
 on:
   schedule:
     - cron: "0 0 * * *"    # Runs at midnight UTC
-    - cron: "0 12 * * *"   # Runs at noon UTC
-  workflow_dispatch:  # Allows manual execution
+    - cron: "0 12 * * *"    # Runs at noon UTC
+  push:
+    branches:
+      - main 
+  workflow_dispatch: 
 
 jobs:
   run-bot:
@@ -17,6 +20,7 @@ jobs:
       REPO: ${{ secrets.REPO }}
       HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
       TOKEN_ADDRESS: ${{ secrets.TOKEN_ADDRESS }}
+      ARC_EVIDENCE_REPO: ${{ secrets.ARC_EVIDENCE_REPO }}  # Add the arc_evidence repo URL here
 
     steps:
       # Step 1: Checkout the repository with the correct token for push access
@@ -37,9 +41,9 @@ jobs:
         run: npx playwright install --with-deps  # Install the required Playwright browsers
 
       # Step 5: Run the bot script
-      - run: npx ts-node api/bot.ts  # Run the bot, which updates JSON files
+      - run: npx ts-node api/bot.ts  # Run the bot, which updates the CSV files
 
-      # Step 6: Commit and Push Data Changes to GitHub
+      # Step 6: Commit and Push Data Changes to GitHub (original push)
       - name: Commit and Push Data Changes
         run: |
           git config --global user.name "GitHub Actions Bot"
@@ -49,3 +53,19 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Allows push access
+
+      # Step 7: Add arc_evidence repository as a remote for pushing CSV updates
+      - name: Add arc_evidence remote
+        run: |
+          git remote add arc_evidence https://github.com/rangeroper/arc_evidence.git  # URL of the arc_evidence repo
+
+      # Step 8: Commit and Push CSV Files to arc_evidence Repository
+      - name: Commit and Push CSV Changes to arc_evidence Repository
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/csv/*  # Add updated CSV files
+          git commit -m "Update CSV metrics data" || echo "No changes to commit"
+          git push arc_evidence main  # Push to the main branch of the arc_evidence repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Allows push access to arc_evidence repository
