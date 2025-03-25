@@ -7,8 +7,22 @@ dotenv.config();
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN as string);
 const CHAT_ID = process.env.CHAT_ID as string;
-const DATA_FILE = path.join(__dirname, "../data/telegram_metrics.json");
 
+const DATA_FILE = path.join(__dirname, '..', 'public', 'data', 'telegram_metrics.json');
+
+// Define the structure of a follower record
+interface FollowerRecord {
+    id: number;
+    timestamp: string;
+    count: number;
+}
+
+// Define the structure of the overall data object
+interface TelegramMetricsData {
+    members: FollowerRecord[];
+}
+
+// Function to fetch and return Telegram stats
 export async function getTelegramStats(): Promise<[string, number]> {
     const previousCount = loadPreviousCount();
 
@@ -51,11 +65,13 @@ export async function getTelegramStats(): Promise<[string, number]> {
     }
 }
 
+// Load the previous count (or the last record's count)
 function loadPreviousCount(): number {
     try {
         if (fs.existsSync(DATA_FILE)) {
-            const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-            return data.count || 0; // Return the count or 0 if not found
+            const data: TelegramMetricsData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+            // Get the count from the most recent record in the 'followers' array
+            return data.members.length > 0 ? data.members[data.members.length - 1].count : 0;
         }
     } catch (error) {
         console.error("Error loading previous count:", error);
@@ -63,14 +79,38 @@ function loadPreviousCount(): number {
     return 0; // Return 0 if file doesn't exist or is invalid
 }
 
+// Save the current count as a new record in the members array
 function saveCurrentCount(count: number) {
-    const directory = path.join(__dirname, '..', 'data'); 
-    if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true }); // Create the directory if it doesn't exist
-    }
+    try {
+        // Read the existing data
+        let existingData: TelegramMetricsData = { members: [] };
+        if (fs.existsSync(DATA_FILE)) {
+            const rawData = fs.readFileSync(DATA_FILE, "utf8");
+            existingData = JSON.parse(rawData);
+        }
 
-    const filePath = path.join(directory, 'telegram_metrics.json');
-    const data = { count };
-    
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));  // Save the data to the json
+        // Determine the next ID
+        const lastId = existingData.members.length > 0 ? existingData.members[existingData.members.length - 1].id : 0;
+        const newId = lastId + 1;
+
+        const newRecord: FollowerRecord = {
+            id: newId, // Incremented ID
+            timestamp: new Date().toISOString(), // ISO string for timestamp
+            count,
+        };
+
+        // Append the new record to the 'members' array
+        existingData.members.push(newRecord);
+
+        // Ensure the directory exists
+        const directory = path.dirname(DATA_FILE);
+        if (!fs.existsSync(directory)) {
+            fs.mkdirSync(directory, { recursive: true });
+        }
+
+        // Write the updated data back to the file
+        fs.writeFileSync(DATA_FILE, JSON.stringify(existingData, null, 2));
+    } catch (error) {
+        console.error("Error saving current count:", error);
+    }
 }

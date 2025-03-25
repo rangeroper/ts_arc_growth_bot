@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
 
-const X_METRICS_FILE = path.join(__dirname, "../data/x_metrics.json");
+const X_METRICS_FILE = path.join(__dirname, "../public/data/x_metrics.json");
 
 // Function to scrape X profile for follower data
 async function scrapeXProfile(url: string): Promise<any | null> {
@@ -38,29 +38,44 @@ async function scrapeXProfile(url: string): Promise<any | null> {
     return null;
 }
 
-// Function to load previous follower count from file
-function loadPreviousFollowers(): number {
+// Function to load previous follower records from file
+function loadPreviousFollowers(): any[] {
     try {
         if (fs.existsSync(X_METRICS_FILE)) {
             const data = JSON.parse(fs.readFileSync(X_METRICS_FILE, 'utf8'));
-            // Return current followers count or fallback to 0
-            if (data?.followers?.current) {
-                return data.followers.current;
-            }
-            return data.followers || 0;
+            return data.followers || []; // Return the followers data array or empty array
         }
     } catch (error) {
         console.error('Error loading previous followers:', error);
     }
-    return 0;
+    return []; // Return empty array if file doesn't exist or is invalid
 }
 
-// Function to save the current follower count
+// Function to save the follower count with a new entry
 function saveFollowersCount(count: number): void {
     try {
+        const previousData = loadPreviousFollowers();
+
+        // Get the last entry's id or start from 1 if it's empty
+        const id = previousData.length > 0 ? previousData[previousData.length - 1].id + 1 : 1;
+
+        // Get the current date and time in ISO format
+        const timestamp = new Date().toISOString();
+
+        const newData = {
+            id: id,
+            timestamp: timestamp,
+            count: count
+        };
+
+        // Add the new data to the array
+        previousData.push(newData);
+
+        // Ensure the directory exists
         fs.mkdirSync(path.dirname(X_METRICS_FILE), { recursive: true });
-        const stats = { followers: { current: count } };
-        fs.writeFileSync(X_METRICS_FILE, JSON.stringify(stats, null, 2));
+
+        // Write the updated data back to the file
+        fs.writeFileSync(X_METRICS_FILE, JSON.stringify({ followers: previousData }, null, 2));
     } catch (error) {
         console.error('Error saving followers count:', error);
     }
@@ -68,7 +83,7 @@ function saveFollowersCount(count: number): void {
 
 // Function to fetch current follower stats
 export async function getXFollowersStats(): Promise<[string, number]> {
-    const previousCount = loadPreviousFollowers();
+    const previousData = loadPreviousFollowers();
     const profile = await scrapeXProfile('https://x.com/arcdotfun');
     let currentCount = 0;
 
@@ -77,6 +92,7 @@ export async function getXFollowersStats(): Promise<[string, number]> {
     }
 
     // Calculate increase and percentage change
+    const previousCount = previousData.length > 0 ? previousData[previousData.length - 1].count : 0;
     const increase = currentCount - previousCount;
     let percentChange = 'N/A';
 
@@ -87,7 +103,7 @@ export async function getXFollowersStats(): Promise<[string, number]> {
         percentChange = '0.00';  // Show 0.00% if there's no change
     }
 
-    // Save the new count
+    // Save the new count with the timestamp
     saveFollowersCount(currentCount);
 
     // Format count with commas

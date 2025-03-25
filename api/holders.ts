@@ -7,11 +7,24 @@ dotenv.config();
 
 const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS as string;
 const HELIUS_API_KEY = process.env.HELIUS_API_KEY as string;
-const DATA_FILE = path.join(__dirname, "../data/token_holders.json");
+const DATA_FILE = path.join(__dirname, "../public/data/token_holders.json");
 
+// Define the structure of a token holder record
+interface TokenHolderRecord {
+    id: number;
+    timestamp: string;
+    count: number;
+}
+
+// Define the structure of the overall token holders data
+interface TokenHoldersData {
+    holders: TokenHolderRecord[];
+}
+
+// Define the structure of the response data from the Helius API
 interface HeliusResponse {
     result?: {
-        token_accounts?: { owner: string }[];
+        token_accounts?: { owner: string }[];  // Explicitly define account type here
         cursor?: string;
     };
     error?: { message: string };
@@ -54,7 +67,7 @@ export async function getTokenHolders(): Promise<number> {
             }
 
             if (data.result?.token_accounts) {
-                data.result.token_accounts.forEach(account => {
+                data.result.token_accounts.forEach((account: { owner: string }) => {  // Explicit type here
                     if (account.owner) uniqueHolders.add(account.owner);
                 });
 
@@ -72,12 +85,12 @@ export async function getTokenHolders(): Promise<number> {
     return uniqueHolders.size;
 }
 
-// Load previous token stats
+// Load previous token stats from the file
 function loadPreviousTokenStats(): number {
     try {
         if (fs.existsSync(DATA_FILE)) {
-            const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-            return data.holders?.current || 0;
+            const data: TokenHoldersData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+            return data.holders.length > 0 ? data.holders[data.holders.length - 1].count : 0;
         }
     } catch (error) {
         console.error("Error loading previous token stats:", error);
@@ -85,12 +98,37 @@ function loadPreviousTokenStats(): number {
     return 0;
 }
 
-// Save current token stats
+// Save current token stats to the file
 function saveCurrentTokenStats(currentCount: number): void {
     try {
-        fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-        const stats = { holders: { current: currentCount } };
-        fs.writeFileSync(DATA_FILE, JSON.stringify(stats, null, 2), "utf8");
+        // Read the existing data
+        let existingData: TokenHoldersData = { holders: [] };
+        if (fs.existsSync(DATA_FILE)) {
+            const rawData = fs.readFileSync(DATA_FILE, "utf8");
+            existingData = JSON.parse(rawData);
+        }
+
+        // Determine the next ID
+        const lastId = existingData.holders.length > 0 ? existingData.holders[existingData.holders.length - 1].id : 0;
+        const newId = lastId + 1;
+
+        const newRecord: TokenHolderRecord = {
+            id: newId, // Incremented ID
+            timestamp: new Date().toISOString(), // ISO string for timestamp
+            count: currentCount,
+        };
+
+        // Append the new record to the holders array
+        existingData.holders.push(newRecord);
+
+        // Ensure the directory exists
+        const directory = path.dirname(DATA_FILE);
+        if (!fs.existsSync(directory)) {
+            fs.mkdirSync(directory, { recursive: true });
+        }
+
+        // Write the updated data back to the file
+        fs.writeFileSync(DATA_FILE, JSON.stringify(existingData, null, 2), "utf8");
     } catch (error) {
         console.error("Error saving token stats:", error);
     }

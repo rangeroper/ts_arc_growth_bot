@@ -96,11 +96,11 @@ async function main() {
         const telegramMilestones = checkMilestones("Telegram Members", telegramCount, MILESTONES.telegram);
         await sendMilestoneMessages("Telegram Members", telegramMilestones);
 
-        const githubStarsMilestones = checkMilestones("GitHub Stars", githubStats.stars, MILESTONES.githubStars);
+        const githubStarsMilestones = checkMilestones("GitHub Stars", githubStats.stars.current, MILESTONES.githubStars);
         await sendMilestoneMessages("GitHub Stars", githubStarsMilestones);
-
-        const githubForksMilestones = checkMilestones("GitHub Forks", githubStats.forks, MILESTONES.githubForks);
-        await sendMilestoneMessages("GitHub Forks", githubForksMilestones);
+        
+        const githubForksMilestones = checkMilestones("GitHub Forks", githubStats.forks.current, MILESTONES.githubForks);
+        await sendMilestoneMessages("GitHub Forks", githubForksMilestones);        
 
         const tokenHoldersMilestones = checkMilestones("Token Holders", tokenCount, MILESTONES.tokenHolders);
         await sendMilestoneMessages("Token Holders", tokenHoldersMilestones);

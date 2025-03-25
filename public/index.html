@@ -3,87 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARC Dashboard - X Metrics</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #007bff;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        .container {
-            background-color: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid white;
-            padding: 10px;
-        }
-    </style>
+    <title>ARC Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
         <h1>ARC Dashboard</h1>
+        
         <h2>X (Twitter) Metrics</h2>
-        <table id="metricsTable">
+        <table id="xMetricsTable">
             <thead>
                 <tr>
-                    <th>Metric</th>
-                    <th>Value</th>
+                    <th>ID</th>
+                    <th>Date/Time</th>
+                    <th>Follower Count</th>
                 </tr>
             </thead>
-            <tbody id="metricsBody">
-                <!-- Data will be inserted here -->
+            <tbody id="xMetricsBody">
+                <!-- Data for X (Twitter) will be inserted here -->
             </tbody>
         </table>
+
+        <h2>Telegram Metrics</h2>
+        <table id="telegramMetricsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date/Time</th>
+                    <th>Member Count</th>
+                </tr>
+            </thead>
+            <tbody id="telegramMetricsBody">
+                <!-- Data for Telegram will be inserted here -->
+            </tbody>
+        </table>
+
+        <h2>Token Holder Metrics</h2>
+        <table id="tokenHoldersMetricsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date/Time</th>
+                    <th>Holder Count</th>
+                </tr>
+            </thead>
+            <tbody id="tokenHoldersBody">
+                <!-- Data for Token Holders will be inserted here -->
+            </tbody>
+        </table>
+
+        <h2>GitHub Stars</h2>
+        <table id="githubStarsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date/Time</th>
+                    <th>Star Count</th>
+                </tr>
+            </thead>
+            <tbody id="githubStarBody">
+                <!-- Data for GitHub will be inserted here -->
+            </tbody>
+        </table>
+        <h2>GitHub Forks</h2>
+        <table id="githubForksTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date/Time</th>
+                    <th>Fork Count</th>
+                </tr>
+            </thead>
+            <tbody id="githubForkBody">
+                <!-- Data for GitHub will be inserted here -->
+            </tbody>
+        </table>
+        
+
     </div>
 
-    <script>
-        async function loadXMetrics() {
-            try {
-                console.log('Attempting to fetch data from:', '/data/x_metrics.json');
-                const response = await fetch('/data/x_metrics.json');
-                
-                console.log('Response status:', response.status);
-                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('Parsed data:', data);
-                
-                const metricsBody = document.getElementById('metricsBody');
-                
-                // Add followers row
-                const followersRow = document.createElement('tr');
-                followersRow.innerHTML = `
-                    <td>Followers</td>
-                    <td>${data.followers.current}</td>
-                `;
-                metricsBody.appendChild(followersRow);
-            } catch (error) {
-                console.error('Detailed error:', error);
-                const metricsBody = document.getElementById('metricsBody');
-                metricsBody.innerHTML = `<tr><td colspan="2">Error loading data: ${error.message}</td></tr>`;
-            }
-        }
-
-        // Load metrics when page loads
-        loadXMetrics();
-    </script>
+    <script src="js/main.js"></script>
 </body>
 </html>

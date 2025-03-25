@@ -1,5 +1,14 @@
 {
-  "followers": {
-    "current": 49706
-  }
+  "followers": [
+    {
+      "id": 1,
+      "timestamp": "2025-03-25T07:00:41.872Z",
+      "count": 49737
+    },
+    {
+      "id": 2,
+      "timestamp": "2025-03-25T07:00:57.890Z",
+      "count": 49737
+    }
+  ]
 }

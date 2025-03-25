@@ -6,12 +6,23 @@ import axios from "axios";
 dotenv.config();
 
 const GITHUB_REPO = process.env.REPO as string;
-const DATA_FILE = path.join(__dirname, "../data/github_metrics.json");
+const STARS_DATA_FILE = path.join(__dirname, "../public/data/github_stars.json");
+const FORKS_DATA_FILE = path.join(__dirname, "../public/data/github_forks.json");
+const VERSION_DATA_FILE = path.join(__dirname, "../public/data/github_release_version.json");
 
 interface GitHubStats {
-    stars: number;
-    forks: number;
-    release_version: string;
+    stars: {
+        current: number;
+        timestamp: string;
+    };
+    forks: {
+        current: number;
+        timestamp: string;
+    };
+    release_version: {
+        current: string;
+        timestamp: string;
+    };
 }
 
 interface GitHubStatChanges {
@@ -20,6 +31,7 @@ interface GitHubStatChanges {
     percent_change: number | string;
 }
 
+// Fetch GitHub Stats
 export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> {
     const previousStats = loadPreviousGitHubStats();
 
@@ -29,15 +41,28 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
 
         const stars = data.stargazers_count ?? 0;
         const forks = data.forks_count ?? 0;
-
         const releaseVersion = await getCurrentReleaseVersion();
 
-        const currentStats: GitHubStats = { stars, forks, release_version: releaseVersion };
+        const currentStats: GitHubStats = {
+            stars: {
+                current: stars,
+                timestamp: new Date().toISOString()
+            },
+            forks: {
+                current: forks,
+                timestamp: new Date().toISOString()
+            },
+            release_version: {
+                current: releaseVersion,
+                timestamp: new Date().toISOString()
+            }
+        };
+
         const stats: Record<string, GitHubStatChanges> = {};
 
         for (const key of Object.keys(currentStats) as (keyof GitHubStats)[]) {
-            const currentValue = key === "release_version" ? currentStats[key] : Number(currentStats[key]);
-            const previousValue = key === "release_version" ? previousStats[key] ?? "N/A" : Number(previousStats[key] ?? 0);
+            const currentValue = key === "release_version" ? currentStats[key].current : Number(currentStats[key].current);
+            const previousValue = key === "release_version" ? previousStats[key].current ?? "N/A" : Number(previousStats[key].current ?? 0);
 
             let increase: number | string = "N/A";
             let percentChange: number | string = "N/A";
@@ -69,11 +94,10 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
             };
         }
 
-        saveCurrentGitHubStats(currentStats); 
+        saveCurrentGitHubStats(currentStats);
 
         // Check for a new release version
-        const isNewRelease = currentStats.release_version !== previousStats.release_version;
-
+        const isNewRelease = currentStats.release_version.current !== previousStats.release_version.current;
 
         // Format GitHub Stats Message
         const formattedStars = stats["stars"].current.toLocaleString();
@@ -101,6 +125,7 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
     }
 }
 
+// Fetch the latest release version
 async function getCurrentReleaseVersion(): Promise<string> {
     try {
         const url = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
@@ -136,22 +161,86 @@ async function getCurrentReleaseVersion(): Promise<string> {
     }
 }
 
+// Load previous GitHub stats from file
 function loadPreviousGitHubStats(): GitHubStats {
     try {
-        if (fs.existsSync(DATA_FILE)) {
-            const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-            return data;
-        }
+        const stars = loadMetricData(STARS_DATA_FILE);
+        const forks = loadMetricData(FORKS_DATA_FILE);
+        const releaseVersion = loadMetricData(VERSION_DATA_FILE);
+
+        return {
+            stars: stars ?? { current: 0, timestamp: "N/A" },
+            forks: forks ?? { current: 0, timestamp: "N/A" },
+            release_version: releaseVersion ?? { current: "N/A", timestamp: "N/A" }
+        };
     } catch (error) {
         console.error("Error loading previous GitHub stats:", error);
     }
-    return { stars: 0, forks: 0, release_version: "N/A" }; // Default stats if no file found or error occurred
+
+    return {
+        stars: { current: 0, timestamp: "N/A" },
+        forks: { current: 0, timestamp: "N/A" },
+        release_version: { current: "N/A", timestamp: "N/A" }
+    }; // Default stats if no file found or error occurred
 }
 
+// Load individual metric data from file
+function loadMetricData(filePath: string): any {
+    try {
+        if (fs.existsSync(filePath)) {
+            const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+            return data;
+        }
+    } catch (error) {
+        console.error(`Error loading data from ${filePath}:`, error);
+    }
+    return null;
+}
+
+// Save the GitHub stats to separate files
 function saveCurrentGitHubStats(stats: GitHubStats): void {
     try {
-        fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-        fs.writeFileSync(DATA_FILE, JSON.stringify(stats, null, 2), "utf8");
+        fs.mkdirSync(path.dirname(STARS_DATA_FILE), { recursive: true });
+
+        // Load existing data or initialize empty structures
+        const starsData = fs.existsSync(STARS_DATA_FILE) ? JSON.parse(fs.readFileSync(STARS_DATA_FILE, "utf8")) : { stars: [] };
+        const forksData = fs.existsSync(FORKS_DATA_FILE) ? JSON.parse(fs.readFileSync(FORKS_DATA_FILE, "utf8")) : { forks: [] };
+        const versionData = fs.existsSync(VERSION_DATA_FILE) ? JSON.parse(fs.readFileSync(VERSION_DATA_FILE, "utf8")) : { versions: [] };
+
+        // Determine the next ID for each metric
+        const nextStarId = starsData.stars.length > 0 ? starsData.stars[starsData.stars.length - 1].id + 1 : 1;
+        const nextForkId = forksData.forks.length > 0 ? forksData.forks[forksData.forks.length - 1].id + 1 : 1;
+        const nextVersionId = versionData.versions.length > 0 ? versionData.versions[versionData.versions.length - 1].id + 1 : 1;
+
+        // Prepare new records with incremented IDs
+        const newStarRecord = {
+            id: nextStarId,
+            timestamp: stats.stars.timestamp,
+            count: stats.stars.current
+        };
+
+        const newForkRecord = {
+            id: nextForkId,
+            timestamp: stats.forks.timestamp,
+            count: stats.forks.current
+        };
+
+        const newVersionRecord = {
+            id: nextVersionId,
+            timestamp: stats.release_version.timestamp,
+            count: stats.release_version.current
+        };
+
+        // Append new records to the existing data
+        starsData.stars.push(newStarRecord);
+        forksData.forks.push(newForkRecord);
+        versionData.versions.push(newVersionRecord);
+
+        // Save updated data back to the files
+        fs.writeFileSync(STARS_DATA_FILE, JSON.stringify(starsData, null, 2), "utf8");
+        fs.writeFileSync(FORKS_DATA_FILE, JSON.stringify(forksData, null, 2), "utf8");
+        fs.writeFileSync(VERSION_DATA_FILE, JSON.stringify(versionData, null, 2), "utf8");
+
     } catch (error) {
         console.error("Error saving GitHub stats:", error);
     }
