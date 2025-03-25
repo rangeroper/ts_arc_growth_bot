@@ -53,8 +53,18 @@
     <script>
         async function loadXMetrics() {
             try {
-                const response = await fetch('../data/x_metrics.json');
+                console.log('Attempting to fetch data from:', '/data/x_metrics.json');
+                const response = await fetch('/data/x_metrics.json');
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Parsed data:', data);
                 
                 const metricsBody = document.getElementById('metricsBody');
                 
@@ -66,9 +76,9 @@
                 `;
                 metricsBody.appendChild(followersRow);
             } catch (error) {
-                console.error('Error loading X metrics:', error);
+                console.error('Detailed error:', error);
                 const metricsBody = document.getElementById('metricsBody');
-                metricsBody.innerHTML = `<tr><td colspan="2">Error loading data</td></tr>`;
+                metricsBody.innerHTML = `<tr><td colspan="2">Error loading data: ${error.message}</td></tr>`;
             }
         }
 
