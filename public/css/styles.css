@@ -3,35 +3,90 @@ body {
     background-color: #007bff;
     color: white;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    justify-content: flex-start; /* Align content to the top */
+    align-items: center; /* Keep it centered vertically */
     flex-direction: column;
-    height: 100vh;
+    height: auto; /* Allow the body to expand naturally */
     margin: 0;
     text-align: center;
     padding: 20px;
+    overflow-x: hidden; /* Hide horizontal overflow if necessary */
 }
 
 .container {
-    background-color: rgba(255,255,255,0.1);
-    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 900px;
+    min-height: 100%; /* Ensure container stretches at least to the full height of its content */
+    position: relative;
+    overflow: auto; /* Allow the container to scroll if the content overflows */
 }
 
 h1 {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+h2 {
+    margin-top: 20px;
 }
 
 table {
-    width: 100%;
+    width: 100%; /* Ensure table takes full width of container */
     border-collapse: collapse;
     margin-top: 20px;
+    table-layout: fixed; /* Ensures table columns take up equal width */
 }
 
 th, td {
     border: 1px solid white;
-    padding: 10px;
+    padding: 15px;
+    text-align: center;
+}
+
+th {
+    background-color: #0056b3;
+    font-weight: bold;
+}
+
+td {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Scrollable table body */
+table tbody {
+    display: block;
+    height: 250px; /* Limit height for the table body */
+    overflow-y: scroll; /* Enable scrolling if the content overflows */
+    width: 100%; /* Ensure tbody takes the full width */
+    max-height: 300px;
+}
+
+table thead, table tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed; /* Ensures proper width alignment */
+}
+
+table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #0056b3; /* Set the header background */
+    z-index: 2; /* Ensure the header stays above the body */
+}
+
+td, th {
+    width: 33.33%; /* Set equal column width */
+}
+
+/* Hide the scrollbar */
+table tbody::-webkit-scrollbar {
+    display: none; /* Hides scrollbar in WebKit browsers (Chrome, Safari) */
+}
+
+table tbody {
+    -ms-overflow-style: none;  /* Hides scrollbar in Internet Explorer 10+ */
+    scrollbar-width: none;  /* Hides scrollbar in Firefox */
 }
