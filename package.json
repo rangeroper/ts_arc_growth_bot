@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node server",
+    "build": "echo 'No build step required'",
     "start_bot": "npx ts-node api/bot.ts"
   },
   "keywords": [],
