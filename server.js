@@ -4,29 +4,50 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-// API endpoint to return token holders data
+// Helper function to read JSON files
+const readJsonFile = (filePath) => {
+  try {
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    return null; // If there's an error, return null
+  }
+};
+
+// Load all the data at server startup
+const tokenHoldersData = readJsonFile(path.join(__dirname, 'data', 'token_holders.json'));
+const xMetricsData = readJsonFile(path.join(__dirname, 'data', 'x_metrics.json'));
+const telegramMetricsData = readJsonFile(path.join(__dirname, 'data', 'telegram_metrics.json'));
+const githubMetricsData = readJsonFile(path.join(__dirname, 'data', 'github_metrics.json'));
+
+// Individual API endpoints
 app.get('/api/token-holders', (req, res) => {
-  // Define the file path to token_holders.json
-  const filePath = path.join(__dirname, 'data', 'token_holders.json');
+  res.json(tokenHoldersData || { error: 'Data not found' });
+});
 
-  // Read the file asynchronously
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      // If there's an error (e.g., file not found), send a 500 error
-      return res.status(500).json({ error: 'Failed to read token_holders.json' });
-    }
+app.get('/api/x-metrics', (req, res) => {
+  res.json(xMetricsData || { error: 'Data not found' });
+});
 
-    try {
-      // Parse the JSON data from the file
-      const tokenData = JSON.parse(data);
+app.get('/api/telegram-metrics', (req, res) => {
+  res.json(telegramMetricsData || { error: 'Data not found' });
+});
 
-      // Send the data as a response
-      res.json(tokenData);
-    } catch (err) {
-      // If there's an error parsing the JSON, send a 500 error
-      res.status(500).json({ error: 'Failed to parse token_holders.json' });
-    }
-  });
+app.get('/api/github-metrics', (req, res) => {
+  res.json(githubMetricsData || { error: 'Data not found' });
+});
+
+// Combined API endpoint at the root path `/`
+app.get('/', (req, res) => {
+  const combinedData = {
+    tokenHolders: tokenHoldersData,
+    xMetrics: xMetricsData,
+    telegramMetrics: telegramMetricsData,
+    githubMetrics: githubMetricsData
+  };
+
+  // Return the combined data as a JSON response
+  res.json(combinedData);
 });
 
 // Start the server on port 3000
