@@ -84,7 +84,7 @@ async function main() {
 
         // Check and send new rig-core version release message if a new release is available
         if (isNewRelease) {
-            const releaseMessage = `🚀 New Release: Version **${githubStats.release_version}** is now available on GitHub!`;
+            const releaseMessage = `🚀 New Release: Version **${githubStats.release_version.current}** is now available on GitHub!`;
             await bot.sendMessage(CHAT_ID, releaseMessage);
             const channel = discordClient.channels.cache.get(DISCORD_CHANNEL_ID) as TextChannel;
             if (channel) {

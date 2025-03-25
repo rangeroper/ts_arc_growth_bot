@@ -96,8 +96,13 @@ export async function getGithubStats(): Promise<[string, GitHubStats, boolean]> 
 
         saveCurrentGitHubStats(currentStats);
 
-        // Check for a new release version
+        console.log("Previous Release Version:", previousStats.release_version.current);
+        console.log("Current Release Version:", currentStats.release_version.current);
+        
         const isNewRelease = currentStats.release_version.current !== previousStats.release_version.current;
+        
+        console.log("Is New Release?", isNewRelease);
+        
 
         // Format GitHub Stats Message
         const formattedStars = stats["stars"].current.toLocaleString();
@@ -168,10 +173,17 @@ function loadPreviousGitHubStats(): GitHubStats {
         const forks = loadMetricData(FORKS_DATA_FILE);
         const releaseVersion = loadMetricData(VERSION_DATA_FILE);
 
+        console.log("Loaded previous stats:");
+        console.log("Stars:", stars);
+        console.log("Forks:", forks);
+        console.log("Release Version:", releaseVersion);
+
         return {
             stars: stars ?? { current: 0, timestamp: "N/A" },
             forks: forks ?? { current: 0, timestamp: "N/A" },
-            release_version: releaseVersion ?? { current: "N/A", timestamp: "N/A" }
+            release_version: releaseVersion?.versions?.length > 0 
+                ? { current: releaseVersion.versions[releaseVersion.versions.length - 1].count, timestamp: releaseVersion.versions[releaseVersion.versions.length - 1].timestamp }
+                : { current: "N/A", timestamp: "N/A" }
         };
     } catch (error) {
         console.error("Error loading previous GitHub stats:", error);
