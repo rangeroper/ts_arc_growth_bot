@@ -59,18 +59,25 @@ jobs:
         run: |
           git remote add arc_evidence ${{ secrets.ARC_EVIDENCE_REPO }}
 
-# Step 8: Pull the latest changes from arc_evidence repository
+      # Step 8: Pull the latest changes from arc_evidence repository
       - name: Pull changes from arc_evidence repository
         run: |
           git fetch arc_evidence  # Fetch the latest changes
           git checkout main  # Ensure we are on the correct branch
           git pull arc_evidence main  # Pull the latest changes
 
-      # Step 9: Commit and Push CSV Files to arc_evidence Repository
+      # Step 9: Check if the 'data/csv/' directory exists and create it if necessary
+      - name: Ensure data/csv directory exists
+        run: |
+          if [ ! -d "data/csv" ]; then
+            mkdir -p data/csv  # Create the directory if it doesn't exist
+          fi
+
+      # Step 10: Commit and Push CSV Files to arc_evidence Repository
       - name: Commit and Push CSV Changes to arc_evidence Repository
         run: |
           git add data/csv/*  # Add updated CSV files
           git commit -m "Update CSV metrics data" || echo "No changes to commit"
-          git push arc_evidence main  # Push to the main branch of the arc_evidence repo
+          git push arc_evidence master  # Push to the master branch of the arc_evidence repo
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Allows push access to arc_evidence repository
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
