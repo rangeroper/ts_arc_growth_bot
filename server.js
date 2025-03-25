@@ -38,7 +38,7 @@ app.get('/api/github-metrics', (req, res) => {
 });
 
 // Combined API endpoint at the root path `/`
-app.get('/', (req, res) => {
+app.get('/api/', (req, res) => {
   const combinedData = {
     tokenHolders: tokenHoldersData,
     xMetrics: xMetricsData,
