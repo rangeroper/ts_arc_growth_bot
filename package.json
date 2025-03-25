@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@vercel/node": "^5.1.14",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
     "discord.js": "^14.18.0",
