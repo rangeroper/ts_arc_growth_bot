@@ -6,9 +6,6 @@ import { getGithubStats} from "./github";
 import { getTokenStats } from "./holders";
 import { getXFollowersStats } from "./followers";
 import { checkMilestones, MILESTONES } from "./milestone";
-import fs from "fs";
-import path from "path";
-import { createObjectCsvWriter } from "csv-writer";
 
 dotenv.config();
 
@@ -65,36 +62,6 @@ async function sendMilestoneMessages(metric: string, milestones: number[]) {
     }
 }
 
-// Create or update CSV file with more detailed data
-async function saveToCSV(fileName: string, label: string, count: number, additionalInfo: string = "") {
-    const folderPath = path.join(__dirname, "..", "data", "csv");
-    if (!fs.existsSync(folderPath)) {
-      fs.mkdirSync(folderPath, { recursive: true });
-    }
-  
-    const filePath = path.join(folderPath, fileName);
-  
-    const csvWriter = createObjectCsvWriter({
-      path: filePath,
-      header: [
-        { id: "date", title: "Date" },
-        { id: "label", title: "Metric Label" },
-        { id: "count", title: "Count" },
-      ],
-      append: true, // Allows us to append data to the CSV
-    });
-  
-    // Write data to CSV
-    await csvWriter.writeRecords([
-      {
-        date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
-        label: label,
-        count: count,
-        additionalInfo: additionalInfo,
-      },
-    ]);
-  }
-
 async function main() {
     try {
         // Check and send metrics (frequency based on cron job)
@@ -110,13 +77,6 @@ async function main() {
             tokenStats,
             xFollowersStats
         ];
-
-        // Save metrics to CSV 
-        await saveToCSV("telegram_followers.csv", "Telegram Followers", telegramCount);
-        await saveToCSV("github_stars.csv", "GitHub Stars", githubStats.stars);
-        await saveToCSV("github_forks.csv", "GitHub Forks", githubStats.forks);
-        await saveToCSV("token_holders.csv", "Token Holders", tokenCount);
-        await saveToCSV("x_followers.csv", "X Followers", xFollowersCount);
 
         // Send the grouped messages to both Telegram and Discord
         await sendUpdateToTG(messages);
