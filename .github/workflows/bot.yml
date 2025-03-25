@@ -4,9 +4,6 @@ on:
   schedule:
     - cron: "0 0 * * *"    # Runs at midnight UTC
     - cron: "0 12 * * *"    # Runs at noon UTC
-  push:
-    branches:
-      - master 
   workflow_dispatch: 
 
 jobs:
