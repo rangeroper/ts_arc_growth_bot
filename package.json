@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "vercel-build": "npm run build",
     "start_bot": "npx ts-node api/bot.ts",
     "start_api": "npx ts-node api/server.ts"
   },
