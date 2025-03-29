@@ -54,6 +54,11 @@
       "id": 11,
       "timestamp": "2025-03-28T12:21:33.874Z",
       "count": "rig-core-v0.10.0"
+    },
+    {
+      "id": 12,
+      "timestamp": "2025-03-29T01:22:59.213Z",
+      "count": "rig-core-v0.10.0"
     }
   ]
 }
