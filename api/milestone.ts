@@ -1,13 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const directory = path.join(__dirname, '..', 'public', 'data', 'public/data'); 
-
-if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true }); // Create the directory if it doesn't exist
-}
-
-const MILESTONE_FILE = path.join(__dirname, '..', 'public/data', 'milestones.json');
+const MILESTONE_FILE = path.join(__dirname, "../public/data/milestones.json");
 
 // Define milestone thresholds for each metric
 export const MILESTONES = {

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
+import { parse } from 'json2csv';
 
 dotenv.config();
 
@@ -22,7 +23,6 @@ interface TelegramMetricsData {
     members: FollowerRecord[];
 }
 
-// Function to fetch and return Telegram stats
 export async function getTelegramStats(): Promise<[string, number]> {
     const previousCount = loadPreviousCount();
 
@@ -30,47 +30,43 @@ export async function getTelegramStats(): Promise<[string, number]> {
         // Get current member count
         const currentCount = await bot.getChatMemberCount(CHAT_ID);
 
-        let percentChange: string;
-        let increase: number;
+        saveCurrentCount(currentCount); // Save the updated count
 
-        // If there is no previous count (first time), just display the current count
-        if (previousCount === 0) {
-            increase = currentCount; // For the first time, the increase is just the current count
-            saveCurrentCount(currentCount); // Save the current count for the first time
-            const message = `👥 Telegram Members  >>  ${currentCount.toLocaleString()}`;
-            return [message, currentCount];
-        } else {
-            increase = currentCount - previousCount;
-
-            // Check if there is no change, or if it's a decrease
-            if (increase === 0) {
-                saveCurrentCount(currentCount); // Save the current count if no change
-                const message = `👥 Telegram Members  >>  ${currentCount.toLocaleString()}`;
-                return [message, currentCount];
-            } else if (increase < 0) {
-                saveCurrentCount(currentCount); // Save the current count if decrease
-                const message = `👥 Telegram Members  >>  ${currentCount.toLocaleString()}`;
-                return  [message, currentCount];
-            } else {
-                // Calculate percentage change for positive increases
-                percentChange = ((increase / previousCount) * 100).toFixed(2);
-                saveCurrentCount(currentCount); // Save the current count if it's a positive increase
-                const message = `👥 Telegram Members  >>  ${currentCount.toLocaleString()} (${percentChange}%)`;
-                return [message, currentCount]; 
+        // Calculate percentage change
+        let percentChange = "N/A";
+        if (previousCount > 0) {
+            const change = ((currentCount - previousCount) / previousCount) * 100;
+            
+            // If the change is exactly 0%, display 0%
+            if (change === 0) {
+                percentChange = "0%";
+            } 
+            // If the change is too small but not exactly 0%, show < 0.01%
+            else if (Math.abs(change) < 0.01) {
+                percentChange = `< 0.01%`;
+            } 
+            // Otherwise, display with two decimal places
+            else {
+                percentChange = `${change.toFixed(2)}%`;
             }
         }
+
+        // Generate message with previous count, current count, and percentage change
+        const message = `👥 Telegram Members:  ${previousCount.toLocaleString()}  >>  ${currentCount.toLocaleString()} (${percentChange})`;
+        return [message, currentCount];
+
     } catch (error) {
-        const message = "❌ Error fetching Telegram member count.";
-        return [message, previousCount] // no current count, send previous count instead
+        console.error("Error fetching Telegram member count:", error);
+        return ["❌ Error fetching Telegram member count.", previousCount];
     }
 }
+
 
 // Load the previous count (or the last record's count)
 function loadPreviousCount(): number {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const data: TelegramMetricsData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-            // Get the count from the most recent record in the 'followers' array
             return data.members.length > 0 ? data.members[data.members.length - 1].count : 0;
         }
     } catch (error) {
@@ -82,7 +78,6 @@ function loadPreviousCount(): number {
 // Save the current count as a new record in the members array
 function saveCurrentCount(count: number) {
     try {
-        // Read the existing data
         let existingData: TelegramMetricsData = { members: [] };
         if (fs.existsSync(DATA_FILE)) {
             const rawData = fs.readFileSync(DATA_FILE, "utf8");
@@ -94,22 +89,31 @@ function saveCurrentCount(count: number) {
         const newId = lastId + 1;
 
         const newRecord: FollowerRecord = {
-            id: newId, // Incremented ID
-            timestamp: new Date().toISOString(), // ISO string for timestamp
+            id: newId,
+            timestamp: new Date().toISOString(),
             count,
         };
 
-        // Append the new record to the 'members' array
         existingData.members.push(newRecord);
 
-        // Ensure the directory exists
         const directory = path.dirname(DATA_FILE);
         if (!fs.existsSync(directory)) {
             fs.mkdirSync(directory, { recursive: true });
         }
 
-        // Write the updated data back to the file
+        // Save data as JSON
         fs.writeFileSync(DATA_FILE, JSON.stringify(existingData, null, 2));
+
+        // Save data as CSV
+        const csvDirectory = path.join(directory, 'csv');
+        if (!fs.existsSync(csvDirectory)) {
+            fs.mkdirSync(csvDirectory, { recursive: true });
+        }
+
+        const csvFileName = path.join(csvDirectory, path.basename(DATA_FILE, '.json') + '.csv');
+        const csvData = parse(existingData.members);
+        fs.writeFileSync(csvFileName, csvData);
+
     } catch (error) {
         console.error("Error saving current count:", error);
     }

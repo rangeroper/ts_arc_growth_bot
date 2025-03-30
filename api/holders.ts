@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import axios from "axios";
+import { parse } from 'json2csv';
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ interface TokenHoldersData {
 // Define the structure of the response data from the Helius API
 interface HeliusResponse {
     result?: {
-        token_accounts?: { owner: string }[];  // Explicitly define account type here
+        token_accounts?: { owner: string }[];
         cursor?: string;
     };
     error?: { message: string };
@@ -67,7 +68,7 @@ export async function getTokenHolders(): Promise<number> {
             }
 
             if (data.result?.token_accounts) {
-                data.result.token_accounts.forEach((account: { owner: string }) => {  // Explicit type here
+                data.result.token_accounts.forEach((account: { owner: string }) => {
                     if (account.owner) uniqueHolders.add(account.owner);
                 });
 
@@ -86,7 +87,7 @@ export async function getTokenHolders(): Promise<number> {
 }
 
 // Load previous token stats from the file
-function loadPreviousTokenStats(): number {
+function loadPreviousCount(): number {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const data: TokenHoldersData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
@@ -99,9 +100,8 @@ function loadPreviousTokenStats(): number {
 }
 
 // Save current token stats to the file
-function saveCurrentTokenStats(currentCount: number): void {
+function saveCurrentCount(count: number): void {
     try {
-        // Read the existing data
         let existingData: TokenHoldersData = { holders: [] };
         if (fs.existsSync(DATA_FILE)) {
             const rawData = fs.readFileSync(DATA_FILE, "utf8");
@@ -113,50 +113,64 @@ function saveCurrentTokenStats(currentCount: number): void {
         const newId = lastId + 1;
 
         const newRecord: TokenHolderRecord = {
-            id: newId, // Incremented ID
-            timestamp: new Date().toISOString(), // ISO string for timestamp
-            count: currentCount,
+            id: newId,
+            timestamp: new Date().toISOString(),
+            count,
         };
 
-        // Append the new record to the holders array
         existingData.holders.push(newRecord);
 
-        // Ensure the directory exists
         const directory = path.dirname(DATA_FILE);
         if (!fs.existsSync(directory)) {
             fs.mkdirSync(directory, { recursive: true });
         }
 
-        // Write the updated data back to the file
+        // Save data as JSON
         fs.writeFileSync(DATA_FILE, JSON.stringify(existingData, null, 2), "utf8");
+
+        // Save data as CSV
+        const csvDirectory = path.join(directory, 'csv');
+        if (!fs.existsSync(csvDirectory)) {
+            fs.mkdirSync(csvDirectory, { recursive: true });
+        }
+
+        const csvFileName = path.join(csvDirectory, path.basename(DATA_FILE, '.json') + '.csv');
+        const csvData = parse(existingData.holders);
+        fs.writeFileSync(csvFileName, csvData);
+
     } catch (error) {
         console.error("Error saving token stats:", error);
     }
 }
 
-// Get token stats and return an array [message, currentCount]
 export async function getTokenStats(): Promise<[string, number]> {
-    const previousCount = loadPreviousTokenStats();
+    const previousCount = loadPreviousCount();
     const currentCount = await getTokenHolders();
 
-    const increase = currentCount - previousCount;
-    let percentChange: number | string = "N/A";
+    saveCurrentCount(currentCount);
 
-    // Only calculate and show percentage if increase is positive and previousCount > 0
-    if (increase > 0 && previousCount > 0) {
-        percentChange = ((increase / previousCount) * 100).toFixed(2); // Calculate percentage change
+    // Calculate percentage change
+    let percentChange = "N/A";
+    if (previousCount > 0) {
+        const change = ((currentCount - previousCount) / previousCount) * 100;
+        
+        // If the change is exactly 0%, display 0%
+        if (change === 0) {
+            percentChange = "0%";
+        } 
+        // If the change is too small to show in 2 decimal places, display "< 0.01%"
+        else if (Math.abs(change) < 0.01) {
+            percentChange = `< 0.01%`; // Or "< -0.01%" for negative changes
+        } 
+        // Otherwise, display with two decimal places
+        else {
+            percentChange = `${change.toFixed(2)}%`;
+        }
     }
 
-    saveCurrentTokenStats(currentCount);
-
-    const formattedCount = currentCount.toLocaleString();
-
-    let message = `💊 $ARC Holders  >>  ${formattedCount}`;
-
-    // Show the percentage only if it's positive
-    if (percentChange !== "N/A") {
-        message += ` (+${percentChange}%)`;
-    }
-
+    // Generate message with previous count, current count, and percentage change
+    const message = `💊 $ARC Holders:  ${previousCount.toLocaleString()}  >>  ${currentCount.toLocaleString()} (${percentChange})`;
     return [message, currentCount];
 }
+
+

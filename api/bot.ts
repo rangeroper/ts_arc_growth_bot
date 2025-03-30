@@ -2,7 +2,9 @@ import dotenv from "dotenv";
 import TelegramBot from "node-telegram-bot-api";
 import { Client, GatewayIntentBits, TextChannel } from "discord.js";
 import { getTelegramStats } from "./telegram";
-import { getGithubStats} from "./github";
+import { getStarsStats } from "./github/stars";
+import { getForksStats } from "./github/forks";
+import { getReleaseVersion } from "./github/versions";
 import { getTokenStats } from "./holders";
 import { getXFollowersStats } from "./followers";
 import { checkMilestones, MILESTONES } from "./milestone";
@@ -64,15 +66,25 @@ async function sendMilestoneMessages(metric: string, milestones: number[]) {
 
 async function main() {
     try {
-        // Check and send metrics (frequency based on cron job)
+        // Fetch the TG stats
         const [telegramMessage, telegramCount] = await getTelegramStats();
-        const [githubMessage, githubStats, isNewRelease] = await getGithubStats();
+
+        // Fetch the individual GitHub stats
+        const [starsMessage, starsStats] = await getStarsStats();
+        const [forksMessage, forksStats] = await getForksStats();
+        const [versionsMessage, versionsStats] = await getReleaseVersion();
+
+        // Fetch the token stats
         const [tokenStats, tokenCount] = await getTokenStats();
+
+        // Fetch the X stats
         const [xFollowersStats, xFollowersCount] = await getXFollowersStats();
 
         // group messages into a list to send to Telegram as one message
         const messages = [
-            githubMessage,
+            starsMessage,
+            forksMessage,
+            versionsMessage,
             telegramMessage,
             tokenStats,
             xFollowersStats
@@ -82,25 +94,15 @@ async function main() {
         await sendUpdateToTG(messages);
         await sendUpdateToDiscord(messages);
 
-        // Check and send new rig-core version release message if a new release is available
-        if (isNewRelease) {
-            const releaseMessage = `🚀 New Release: Version **${githubStats.release_version.current}** is now available on GitHub!`;
-            await bot.sendMessage(CHAT_ID, releaseMessage);
-            const channel = discordClient.channels.cache.get(DISCORD_CHANNEL_ID) as TextChannel;
-            if (channel) {
-                await channel.send(releaseMessage);
-            }
-        }
-
         // Check and send milestone notifications if any milestones have been reached
         const telegramMilestones = checkMilestones("Telegram Members", telegramCount, MILESTONES.telegram);
         await sendMilestoneMessages("Telegram Members", telegramMilestones);
 
-        const githubStarsMilestones = checkMilestones("GitHub Stars", githubStats.stars.current, MILESTONES.githubStars);
+        const githubStarsMilestones = checkMilestones("GitHub Stars", starsStats.current, MILESTONES.githubStars);
         await sendMilestoneMessages("GitHub Stars", githubStarsMilestones);
-        
-        const githubForksMilestones = checkMilestones("GitHub Forks", githubStats.forks.current, MILESTONES.githubForks);
-        await sendMilestoneMessages("GitHub Forks", githubForksMilestones);        
+
+        const githubForksMilestones = checkMilestones("GitHub Forks", forksStats.current, MILESTONES.githubForks);
+        await sendMilestoneMessages("GitHub Forks", githubForksMilestones);
 
         const tokenHoldersMilestones = checkMilestones("Token Holders", tokenCount, MILESTONES.tokenHolders);
         await sendMilestoneMessages("Token Holders", tokenHoldersMilestones);
